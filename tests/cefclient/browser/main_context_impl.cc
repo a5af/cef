@@ -59,9 +59,9 @@ MainContextImpl::MainContextImpl(CefRefPtr<CefCommandLine> command_line,
                  .c_str());
   }
 
-  // Whether transparent painting is used with windowless rendering.
+  // Whether transparent painting is used with windowless rendering or Views.
   const bool use_transparent_painting =
-      use_windowless_rendering_ &&
+      (use_windowless_rendering_ || use_views_) &&
       command_line_->HasSwitch(switches::kTransparentPaintingEnabled);
 
   shared_texture_enabled_ =

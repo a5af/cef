@@ -409,8 +409,18 @@ void CefBrowserViewImpl::SetPendingBrowserCreateParams(
 }
 
 void CefBrowserViewImpl::SetDefaults(const CefBrowserSettings& settings) {
+  // AgentMux patch: views-hosted browsers must propagate transparency from
+  // CefSettings.background_color when alpha=0. The original STATE_DISABLED
+  // forced opaque-white fallback regardless of settings, which then cascaded
+  // to the BrowserView's background and prevented Layer 4 (renderer-side
+  // LayerTreeHost::has_transparent_background_) from flipping. STATE_ENABLED
+  // here is correct for CefBrowserView since it is by definition views-hosted;
+  // GetBackgroundColor still honors opaque settings (alpha=FF) — only triggers
+  // transparency when settings.background_color has alpha=0. Pairs with the
+  // is_views_hosted plumbing in browser_host_base.cc and
+  // browser_platform_delegate_create.cc from PR #4086 / commit 5ab41b6.
   SetBackgroundColor(
-      CefContext::Get()->GetBackgroundColor(&settings, STATE_DISABLED));
+      CefContext::Get()->GetBackgroundColor(&settings, STATE_ENABLED));
 }
 
 views::View* CefBrowserViewImpl::CreateRootView() {
