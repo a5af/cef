@@ -36,8 +36,12 @@
 #elif BUILDFLAG(IS_OZONE)
 #include "ui/aura/env.h"
 #include "ui/aura/test/event_generator_delegate_aura.h"
+#include "ui/aura/window_tree_host_platform.h"
+#include "ui/base/hit_test.h"
+#include "ui/display/screen.h"
 #include "ui/events/test/event_generator.h"
 #include "ui/ozone/public/ozone_platform.h"
+#include "ui/platform_window/wm/wm_move_resize_handler.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h"
 #endif
 
@@ -595,6 +599,65 @@ void CefWindowImpl::CancelMenu() {
   }
   DCHECK(!menu_model_);
   DCHECK(!menu_runner_);
+}
+
+// Begin a native interactive window move via the platform's WmMoveResizeHandler.
+// On Linux/Wayland this dispatches xdg_toplevel.move using the most recent
+// input serial; on Linux/X11 it dispatches _NET_WM_MOVERESIZE. Both are
+// non-blocking — the compositor takes over until the user releases the
+// mouse button.
+//
+// Intended caller: a renderer-side mousedown handler that forwards the
+// event via IPC. This lets clients implement "drag the window from
+// anywhere on the title bar" without `-webkit-app-region: drag`, which
+// suppresses ALL renderer events on the dragged element (including
+// `contextmenu`) and so prevents drag and right-click from coexisting.
+bool CefWindowImpl::BeginWindowDrag() {
+  CEF_REQUIRE_VALID_RETURN(false);
+  if (!widget_) {
+    return false;
+  }
+#if BUILDFLAG(IS_OZONE)
+  // Get the underlying ui::PlatformWindow from the Aura tree host. On
+  // Linux this is WaylandWindow (Wayland) or X11Window (X11).
+  auto* native_view = widget_->GetNativeView();
+  if (!native_view) {
+    return false;
+  }
+  auto* host = native_view->GetHost();
+  if (!host) {
+    return false;
+  }
+  // On Ozone the Aura tree host is always a WindowTreeHostPlatform
+  // subclass (DesktopWindowTreeHostLinux on Wayland/X11). chromium
+  // builds with -fno-rtti so we can't dynamic_cast to verify; the
+  // BUILDFLAG(IS_OZONE) gate is the static guarantee. If a future
+  // Ozone backend ships a non-PlatformWindow tree host, this cast
+  // and the platform_window() call below would need to be reworked.
+  auto* platform_host = static_cast<aura::WindowTreeHostPlatform*>(host);
+  auto* platform_window = platform_host->platform_window();
+  if (!platform_window) {
+    return false;
+  }
+  auto* handler = ui::GetWmMoveResizeHandler(*platform_window);
+  if (!handler) {
+    return false;
+  }
+  // Get the cursor's current screen position in pixels. WaylandToplevelWindow's
+  // HTCAPTION path ignores this (it just calls xdg_toplevel.move with the
+  // most recent input serial), but X11Window's path passes it through to
+  // _NET_WM_MOVERESIZE which uses it as the drag anchor — passing
+  // gfx::Point() there gives a wrong anchor offset. display::Screen returns
+  // the same coordinate space the X server uses for root-window events.
+  gfx::Point cursor_screen_point;
+  if (auto* screen = display::Screen::Get()) {
+    cursor_screen_point = screen->GetCursorScreenPoint();
+  }
+  handler->DispatchHostWindowDragMovement(HTCAPTION, cursor_screen_point);
+  return true;
+#else
+  return false;
+#endif
 }
 
 CefRefPtr<CefDisplay> CefWindowImpl::GetDisplay() {
