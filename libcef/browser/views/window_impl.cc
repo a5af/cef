@@ -36,8 +36,11 @@
 #elif BUILDFLAG(IS_OZONE)
 #include "ui/aura/env.h"
 #include "ui/aura/test/event_generator_delegate_aura.h"
+#include "ui/aura/window_tree_host_platform.h"
+#include "ui/base/hit_test.h"
 #include "ui/events/test/event_generator.h"
 #include "ui/ozone/public/ozone_platform.h"
+#include "ui/platform_window/wm/wm_move_resize_handler.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h"
 #endif
 
@@ -595,6 +598,54 @@ void CefWindowImpl::CancelMenu() {
   }
   DCHECK(!menu_model_);
   DCHECK(!menu_runner_);
+}
+
+// Begin a native interactive window move via the platform's WmMoveResizeHandler.
+// On Linux/Wayland this dispatches xdg_toplevel.move using the most recent
+// input serial; on Linux/X11 it dispatches _NET_WM_MOVERESIZE. Both are
+// non-blocking — the compositor takes over until the user releases the
+// mouse button.
+//
+// Intended caller: a renderer-side mousedown handler that forwards the
+// event via IPC. This lets clients implement "drag the window from
+// anywhere on the title bar" without `-webkit-app-region: drag`, which
+// suppresses ALL renderer events on the dragged element (including
+// `contextmenu`) and so prevents drag and right-click from coexisting.
+bool CefWindowImpl::BeginWindowDrag() {
+  CEF_REQUIRE_VALID_RETURN(false);
+  if (!widget_) {
+    return false;
+  }
+#if BUILDFLAG(IS_OZONE)
+  // Get the underlying ui::PlatformWindow from the Aura tree host. On
+  // Linux this is WaylandWindow (Wayland) or X11Window (X11).
+  auto* native_view = widget_->GetNativeView();
+  if (!native_view) {
+    return false;
+  }
+  auto* host = native_view->GetHost();
+  if (!host) {
+    return false;
+  }
+  auto* platform_host = static_cast<aura::WindowTreeHostPlatform*>(host);
+  auto* platform_window = platform_host->platform_window();
+  if (!platform_window) {
+    return false;
+  }
+  auto* handler = ui::GetWmMoveResizeHandler(*platform_window);
+  if (!handler) {
+    return false;
+  }
+  // Pointer location is unused by WaylandToplevelWindow's HTCAPTION path
+  // (it just calls xdg_toplevel.move). On X11 the location is used for
+  // _NET_WM_MOVERESIZE; gfx::Point() is a best-effort default since the
+  // recent button-press serial is what governs whether the compositor
+  // honors the request.
+  handler->DispatchHostWindowDragMovement(HTCAPTION, gfx::Point());
+  return true;
+#else
+  return false;
+#endif
 }
 
 CefRefPtr<CefDisplay> CefWindowImpl::GetDisplay() {
