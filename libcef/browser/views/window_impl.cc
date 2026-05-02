@@ -38,6 +38,7 @@
 #include "ui/aura/test/event_generator_delegate_aura.h"
 #include "ui/aura/window_tree_host_platform.h"
 #include "ui/base/hit_test.h"
+#include "ui/display/screen.h"
 #include "ui/events/test/event_generator.h"
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/platform_window/wm/wm_move_resize_handler.h"
@@ -627,6 +628,12 @@ bool CefWindowImpl::BeginWindowDrag() {
   if (!host) {
     return false;
   }
+  // On Ozone the Aura tree host is always a WindowTreeHostPlatform
+  // subclass (DesktopWindowTreeHostLinux on Wayland/X11). chromium
+  // builds with -fno-rtti so we can't dynamic_cast to verify; the
+  // BUILDFLAG(IS_OZONE) gate is the static guarantee. If a future
+  // Ozone backend ships a non-PlatformWindow tree host, this cast
+  // and the platform_window() call below would need to be reworked.
   auto* platform_host = static_cast<aura::WindowTreeHostPlatform*>(host);
   auto* platform_window = platform_host->platform_window();
   if (!platform_window) {
@@ -636,12 +643,17 @@ bool CefWindowImpl::BeginWindowDrag() {
   if (!handler) {
     return false;
   }
-  // Pointer location is unused by WaylandToplevelWindow's HTCAPTION path
-  // (it just calls xdg_toplevel.move). On X11 the location is used for
-  // _NET_WM_MOVERESIZE; gfx::Point() is a best-effort default since the
-  // recent button-press serial is what governs whether the compositor
-  // honors the request.
-  handler->DispatchHostWindowDragMovement(HTCAPTION, gfx::Point());
+  // Get the cursor's current screen position in pixels. WaylandToplevelWindow's
+  // HTCAPTION path ignores this (it just calls xdg_toplevel.move with the
+  // most recent input serial), but X11Window's path passes it through to
+  // _NET_WM_MOVERESIZE which uses it as the drag anchor — passing
+  // gfx::Point() there gives a wrong anchor offset. display::Screen returns
+  // the same coordinate space the X server uses for root-window events.
+  gfx::Point cursor_screen_point;
+  if (auto* screen = display::Screen::Get()) {
+    cursor_screen_point = screen->GetCursorScreenPoint();
+  }
+  handler->DispatchHostWindowDragMovement(HTCAPTION, cursor_screen_point);
   return true;
 #else
   return false;
