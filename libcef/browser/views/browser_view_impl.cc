@@ -17,6 +17,8 @@
 #include "cef/libcef/browser/views/window_impl.h"
 #include "chrome/browser/profiles/profile.h"
 #include "components/input/native_web_keyboard_event.h"
+#include "content/browser/renderer_host/render_widget_host_impl.h"
+#include "content/browser/renderer_host/render_widget_host_owner_delegate.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents.h"
@@ -50,8 +52,19 @@ class TransparencyApplyOnRenderReady : public content::WebContentsObserver {
   ~TransparencyApplyOnRenderReady() override = default;
 
   void ApplyToCurrentRWHView() {
-    if (auto* view = web_contents()->GetRenderWidgetHostView()) {
-      view->SetBackgroundColor(SK_ColorTRANSPARENT);
+    auto* view = web_contents()->GetRenderWidgetHostView();
+    if (!view) {
+      return;
+    }
+    view->SetBackgroundColor(SK_ColorTRANSPARENT);
+    // Also directly call SetBackgroundOpaque(false) via owner_delegate to
+    // guarantee the IPC fires. RWHView::SetBackgroundColor early-returns when
+    // the stored color matches the new one, which can suppress the IPC after
+    // a prior SetDefaults call already set the view's default to transparent.
+    auto* host_impl =
+        static_cast<content::RenderWidgetHostImpl*>(view->GetRenderWidgetHost());
+    if (host_impl && host_impl->owner_delegate()) {
+      host_impl->owner_delegate()->SetBackgroundOpaque(false);
     }
   }
 

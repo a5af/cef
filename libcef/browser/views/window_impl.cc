@@ -9,6 +9,7 @@
 #include "base/i18n/rtl.h"
 #include "base/memory/raw_ptr.h"
 #include "cef/libcef/browser/browser_event_util.h"
+#include "cef/libcef/browser/context.h"
 #include "cef/libcef/browser/thread_util.h"
 #include "cef/libcef/browser/views/browser_view_impl.h"
 #include "cef/libcef/browser/views/display_impl.h"
@@ -993,6 +994,22 @@ void CefWindowImpl::CreateWidget(gfx::AcceleratedWidget parent_widget) {
   unhandled_key_event_handler_ =
       std::make_unique<CefUnhandledKeyEventHandler>(this, widget_);
 #endif
+
+  // AgentMux/CEF transparency patch: if the global CefSettings background is
+  // transparent, push that to the browser-side ui::Compositor now that
+  // widget_ has been initialized. Calling earlier (e.g. from
+  // OnNativeWidgetCreated, where window_view.cc's existing modal-only path
+  // calls SetBackgroundColor) is a no-op because widget_ is still null and
+  // widget_->GetCompositor() returns null — that path silently dropped the
+  // SetBackgroundColor call, leaving the browser-side compositor at its
+  // default opaque white clear color, which then filled the wl_surface
+  // framebuffer with opaque white pixels regardless of
+  // CefSettings.background_color.
+  if (CefContext::Get() &&
+      CefContext::Get()->GetBackgroundColor(nullptr, STATE_ENABLED) ==
+          SK_ColorTRANSPARENT) {
+    SetBackgroundColor(SK_ColorTRANSPARENT);
+  }
 
   // The Widget and root View are owned by the native window. Therefore don't
   // keep an owned reference.

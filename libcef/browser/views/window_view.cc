@@ -738,6 +738,18 @@ void CefWindowView::CreateWidget(gfx::AcceleratedWidget parent_widget) {
     if (is_translucent) {
       GetCefWindow()->SetBackgroundColor(SK_ColorTRANSPARENT);
     }
+  } else if (is_translucent) {
+    // AgentMux/CEF transparency patch: also apply transparent background to
+    // top-level (non-modal) translucent windows. Without this the browser-side
+    // ui::Compositor keeps its default opaque white clear color, and the
+    // wl_surface's framebuffer is filled with opaque white before the
+    // renderer's CompositorFrame is composited on top — so even with the
+    // renderer's LayerTreeHost properly transparent, the final pixels are
+    // opaque. CefWindowImpl::SetBackgroundColor calls
+    // widget_->GetCompositor()->SetBackgroundColor(SK_ColorTRANSPARENT)
+    // which sets the browser-side cc::LayerTreeHost background_color to
+    // transparent, so CalculateRenderPasses skips the screen-fill quad.
+    GetCefWindow()->SetBackgroundColor(SK_ColorTRANSPARENT);
   }
 }
 
