@@ -17,6 +17,7 @@
 #include "cef/libcef/browser/views/window_impl.h"
 #include "chrome/browser/profiles/profile.h"
 #include "components/input/native_web_keyboard_event.h"
+#include "content/public/browser/web_contents.h"
 #include "ui/content_accelerators/accelerator_util.h"
 
 namespace {
@@ -169,6 +170,23 @@ void CefBrowserViewImpl::WebContentsCreated(
     content::WebContents* web_contents) {
   if (web_view()) {
     web_view()->SetWebContents(web_contents);
+  }
+  // AgentMux follow-up to b921ffe18 — propagate the BrowserView's transparent
+  // background color to the renderer's WebContents. Chad Nelson's patch
+  // colored the Views/Aura side (CefBrowserViewImpl::SetBackgroundColor +
+  // CefWindow::SetBackgroundColor + GetCompositor()->SetBackgroundColor) but
+  // never reached cc::LayerTreeHost::has_transparent_background_. As a result
+  // the compositor clamped every pixel's alpha to 1.0 in the renderer's final
+  // framebuffer, even after a kTranslucent Aura widget and an empty
+  // wl_surface opaque_region were arranged. SetPageBaseBackgroundColor is the
+  // WebContents-level API that broadcasts to all RenderViewHosts so the
+  // setting survives navigations and renderer process swaps. With alpha=0 the
+  // renderer flips has_transparent_background_=true and the wl_buffer
+  // receives true ARGB pixels. See
+  // agentmux/docs/retros/cef-transparency-empirical-2026-05-11.md.
+  if (web_contents &&
+      SkColorGetA(default_background_color_) == SK_AlphaTRANSPARENT) {
+    web_contents->SetPageBaseBackgroundColor(SK_ColorTRANSPARENT);
   }
 }
 
@@ -419,8 +437,9 @@ void CefBrowserViewImpl::SetDefaults(const CefBrowserSettings& settings) {
   // transparency when settings.background_color has alpha=0. Pairs with the
   // is_views_hosted plumbing in browser_host_base.cc and
   // browser_platform_delegate_create.cc from PR #4086 / commit 5ab41b6.
-  SetBackgroundColor(
-      CefContext::Get()->GetBackgroundColor(&settings, STATE_ENABLED));
+  default_background_color_ =
+      CefContext::Get()->GetBackgroundColor(&settings, STATE_ENABLED);
+  SetBackgroundColor(default_background_color_);
 }
 
 views::View* CefBrowserViewImpl::CreateRootView() {
