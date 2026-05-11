@@ -17,6 +17,7 @@
 #include "cef/libcef/browser/views/window_impl.h"
 #include "chrome/browser/profiles/profile.h"
 #include "components/input/native_web_keyboard_event.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents.h"
 #include "ui/content_accelerators/accelerator_util.h"
 
@@ -172,21 +173,36 @@ void CefBrowserViewImpl::WebContentsCreated(
     web_view()->SetWebContents(web_contents);
   }
   // AgentMux follow-up to b921ffe18 — propagate the BrowserView's transparent
-  // background color to the renderer's WebContents. Chad Nelson's patch
-  // colored the Views/Aura side (CefBrowserViewImpl::SetBackgroundColor +
-  // CefWindow::SetBackgroundColor + GetCompositor()->SetBackgroundColor) but
-  // never reached cc::LayerTreeHost::has_transparent_background_. As a result
-  // the compositor clamped every pixel's alpha to 1.0 in the renderer's final
+  // background color to the renderer's WebContents AND its RenderWidgetHost
+  // view. Chad Nelson's patch colored the Views/Aura side
+  // (CefBrowserViewImpl::SetBackgroundColor + CefWindow::SetBackgroundColor +
+  // GetCompositor()->SetBackgroundColor) but never reached
+  // cc::LayerTreeHost::has_transparent_background_. As a result the
+  // compositor clamped every pixel's alpha to 1.0 in the renderer's final
   // framebuffer, even after a kTranslucent Aura widget and an empty
-  // wl_surface opaque_region were arranged. SetPageBaseBackgroundColor is the
-  // WebContents-level API that broadcasts to all RenderViewHosts so the
-  // setting survives navigations and renderer process swaps. With alpha=0 the
-  // renderer flips has_transparent_background_=true and the wl_buffer
-  // receives true ARGB pixels. See
-  // agentmux/docs/retros/cef-transparency-empirical-2026-05-11.md.
+  // wl_surface opaque_region were arranged.
+  //
+  // Two-pronged fix:
+  //   1. WebContents::SetPageBaseBackgroundColor — sets the page's base
+  //      color (blink::Page level). Broadcasts across renderer process
+  //      swaps; survives navigations. Sets the bg behind body when body
+  //      is transparent (e.g. when CSS body bg has alpha < 1).
+  //   2. RenderWidgetHostView::SetBackgroundColor — THIS is the one that
+  //      triggers SetBackgroundOpaque(false) IPC → renderer flips
+  //      cc::LayerTreeHost::has_transparent_background_ = true → cc emits
+  //      true ARGB pixels (no alpha-1.0 clamp). Without this, a body with
+  //      alpha=0 shows the renderer's default opaque white instead of the
+  //      desktop. May be null at WebContentsCreated time if the renderer
+  //      process isn't up yet — guard accordingly; the RWHView gets the
+  //      page-base color and inherits the right opacity once it spawns.
+  //
+  // See agentmux/docs/retros/cef-transparency-empirical-2026-05-11.md.
   if (web_contents &&
       SkColorGetA(default_background_color_) == SK_AlphaTRANSPARENT) {
     web_contents->SetPageBaseBackgroundColor(SK_ColorTRANSPARENT);
+    if (auto* view = web_contents->GetRenderWidgetHostView()) {
+      view->SetBackgroundColor(SK_ColorTRANSPARENT);
+    }
   }
 }
 
