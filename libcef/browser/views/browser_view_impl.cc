@@ -36,9 +36,11 @@ namespace {
 class TransparencyApplyOnRenderReady : public content::WebContentsObserver {
  public:
   static void Attach(content::WebContents* web_contents) {
-    // Self-owning. Lifetime ends at:
-    //   - RenderFrameCreated for the primary main frame (one-shot apply), or
-    //   - WebContentsDestroyed.
+    // Self-owning. Deletes itself when the WebContents is destroyed; stays
+    // alive across cross-process navigations so each new renderer process
+    // gets the transparent background applied on RenderFrameCreated /
+    // RenderViewReady — otherwise a new RWHView reverts to the default
+    // opaque clear color and Wayland sees opaque pixels again.
     new TransparencyApplyOnRenderReady(web_contents);
   }
 
@@ -47,15 +49,19 @@ class TransparencyApplyOnRenderReady : public content::WebContentsObserver {
       : content::WebContentsObserver(wc) {}
   ~TransparencyApplyOnRenderReady() override = default;
 
-  void RenderFrameCreated(content::RenderFrameHost* rfh) override {
-    if (!rfh || !rfh->IsInPrimaryMainFrame()) {
-      return;
-    }
+  void ApplyToCurrentRWHView() {
     if (auto* view = web_contents()->GetRenderWidgetHostView()) {
       view->SetBackgroundColor(SK_ColorTRANSPARENT);
     }
-    delete this;
   }
+
+  void RenderFrameCreated(content::RenderFrameHost* rfh) override {
+    if (rfh && rfh->IsInPrimaryMainFrame()) {
+      ApplyToCurrentRWHView();
+    }
+  }
+
+  void RenderViewReady() override { ApplyToCurrentRWHView(); }
 
   void WebContentsDestroyed() override { delete this; }
 };
