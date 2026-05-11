@@ -17,11 +17,48 @@
 #include "cef/libcef/browser/views/window_impl.h"
 #include "chrome/browser/profiles/profile.h"
 #include "components/input/native_web_keyboard_event.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "ui/content_accelerators/accelerator_util.h"
 
 namespace {
+
+// AgentMux transparency-cascade observer. WebContentsCreated fires before
+// the renderer process spawns, so `web_contents->GetRenderWidgetHostView()`
+// is null at that point and RWHView::SetBackgroundColor — the call that
+// triggers SetBackgroundOpaque(false) IPC → renderer flips
+// cc::LayerTreeHost::has_transparent_background_=true — never runs. This
+// observer self-attaches to a transparent-background WebContents and applies
+// the color the moment the primary main frame's renderer is created.
+// Self-deletes after success or on WebContents destruction. Single-use.
+class TransparencyApplyOnRenderReady : public content::WebContentsObserver {
+ public:
+  static void Attach(content::WebContents* web_contents) {
+    // Self-owning. Lifetime ends at:
+    //   - RenderFrameCreated for the primary main frame (one-shot apply), or
+    //   - WebContentsDestroyed.
+    new TransparencyApplyOnRenderReady(web_contents);
+  }
+
+ private:
+  explicit TransparencyApplyOnRenderReady(content::WebContents* wc)
+      : content::WebContentsObserver(wc) {}
+  ~TransparencyApplyOnRenderReady() override = default;
+
+  void RenderFrameCreated(content::RenderFrameHost* rfh) override {
+    if (!rfh || !rfh->IsInPrimaryMainFrame()) {
+      return;
+    }
+    if (auto* view = web_contents()->GetRenderWidgetHostView()) {
+      view->SetBackgroundColor(SK_ColorTRANSPARENT);
+    }
+    delete this;
+  }
+
+  void WebContentsDestroyed() override { delete this; }
+};
 
 std::optional<cef_gesture_command_t> GetGestureCommand(
     ui::GestureEvent* event) {
@@ -200,9 +237,14 @@ void CefBrowserViewImpl::WebContentsCreated(
   if (web_contents &&
       SkColorGetA(default_background_color_) == SK_AlphaTRANSPARENT) {
     web_contents->SetPageBaseBackgroundColor(SK_ColorTRANSPARENT);
+    // Immediate-try (rarely effective — RWHView is usually null here):
     if (auto* view = web_contents->GetRenderWidgetHostView()) {
       view->SetBackgroundColor(SK_ColorTRANSPARENT);
     }
+    // Deferred-try: install a one-shot observer that fires when the
+    // primary main frame's renderer process spawns. This is the path
+    // that actually flips has_transparent_background_ in production.
+    TransparencyApplyOnRenderReady::Attach(web_contents);
   }
 }
 
@@ -221,6 +263,24 @@ void CefBrowserViewImpl::BrowserCreated(
     base::RepeatingClosure on_bounds_changed) {
   browser_ = browser;
   on_bounds_changed_ = on_bounds_changed;
+
+  // AgentMux: WebContentsCreated fires before the renderer process is up, so
+  // `web_contents->GetRenderWidgetHostView()` is null there and our
+  // transparency cascade can't reach the RWHView. BrowserCreated runs after
+  // the browser host is fully wired, by which point the RWHView either
+  // exists or will exist imminently. Re-apply here for windows whose
+  // settings background is transparent. Without this, the renderer keeps
+  // its default opaque-white compositor clear color, and CSS body alpha=0
+  // produces opaque (34,34,34,255) pixels in the wl_buffer — verified via
+  // direct pixel sampling on AgentMux 0.33.789.
+  if (browser &&
+      SkColorGetA(default_background_color_) == SK_AlphaTRANSPARENT) {
+    if (auto* wc = browser->GetWebContents()) {
+      if (auto* view = wc->GetRenderWidgetHostView()) {
+        view->SetBackgroundColor(SK_ColorTRANSPARENT);
+      }
+    }
+  }
 }
 
 void CefBrowserViewImpl::BrowserDestroyed(CefBrowserHostBase* browser) {
