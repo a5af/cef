@@ -522,8 +522,20 @@ void CefWindowView::CreateWidget(gfx::AcceleratedWidget parent_widget) {
   bool can_activate = true;
   bool can_resize = true;
 
+  // Determine frameless-ness up front: it gates whether a translucent
+  // background is honored. (The native-parent path below forces it true.)
+  if (cef_delegate()) {
+    is_frameless_ = cef_delegate()->IsFrameless(GetCefWindow());
+  }
+
+  // Only a frameless Views window may use a translucent background. A normal
+  // (framed) window stays opaque even when the global background_color is the
+  // default 0 (== SK_ColorTRANSPARENT) — otherwise every default-configured
+  // Views window would silently become transparent instead of opaque-white.
+  // Matches the "frameless window using Views framework" gating documented in
+  // include/internal/cef_types.h (agentmuxai/agentmux#872).
   auto color = CefContext::Get()->GetBackgroundColor(nullptr, STATE_ENABLED);
-  bool is_translucent = color == SK_ColorTRANSPARENT;
+  bool is_translucent = is_frameless_ && color == SK_ColorTRANSPARENT;
 
   const bool has_native_parent = parent_widget != gfx::kNullAcceleratedWidget;
   if (has_native_parent) {
@@ -567,8 +579,7 @@ void CefWindowView::CreateWidget(gfx::AcceleratedWidget parent_widget) {
     if (has_native_parent) {
       DCHECK(!params.bounds.IsEmpty());
     } else {
-      is_frameless_ = cef_delegate()->IsFrameless(cef_window);
-
+      // is_frameless_ was already determined above (it gates translucency).
       params.native_widget =
           view_util::CreateNativeWidget(widget, cef_window, cef_delegate());
 

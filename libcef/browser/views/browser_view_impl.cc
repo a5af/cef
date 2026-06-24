@@ -33,8 +33,10 @@ namespace {
 // triggers SetBackgroundOpaque(false) IPC → renderer flips
 // cc::LayerTreeHost::has_transparent_background_=true — never runs. This
 // observer self-attaches to a transparent-background WebContents and applies
-// the color the moment the primary main frame's renderer is created.
-// Self-deletes after success or on WebContents destruction. Single-use.
+// the color the moment the primary main frame's renderer is created. It deletes
+// itself only on WebContents destruction and persists across renderer swaps,
+// re-applying on every RenderFrameCreated / RenderViewReady — not single-use
+// (see Attach() below).
 class TransparencyApplyOnRenderReady : public content::WebContentsObserver {
  public:
   static void Attach(content::WebContents* web_contents) {

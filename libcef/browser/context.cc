@@ -75,12 +75,12 @@ void InitCrashReporter() {
 #endif  // BUILDFLAG(IS_WIN)
 
 bool GetColor(const cef_color_t cef_in, bool is_transparent, SkColor* sk_out) {
-  // transparent unsupported browser colors must be fully opaque.
+  // Colors for a non-transparent (opaque) context must be fully opaque.
   if (!is_transparent && CefColorGetA(cef_in) != SK_AlphaOPAQUE) {
     return false;
   }
 
-  // transparent supported browser colors may be fully transparent.
+  // Colors for a transparent context may be fully transparent.
   if (is_transparent && CefColorGetA(cef_in) == SK_AlphaTRANSPARENT) {
     *sk_out = SK_ColorTRANSPARENT;
     return true;

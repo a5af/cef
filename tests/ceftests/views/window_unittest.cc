@@ -586,9 +586,9 @@ void WindowAcceleratorImpl(CefRefPtr<CefWaitableEvent> event) {
 }
 
 void VerifyWindowTransparentBackground(CefRefPtr<CefWindow> window) {
-  // The transparent background color value from CefSettings.background_color
-  // by set in CefTestSuite::GetSettings() to enable transparent window
-  // in Views framework.
+  // CefSettings.background_color is never assigned by CefTestSuite::GetSettings();
+  // its zero default (alpha == 0, i.e. SK_ColorTRANSPARENT) is what enables a
+  // transparent Views window, so the background color reads back as 0.
   EXPECT_EQ(window->GetBackgroundColor(), 0u);
 }
 

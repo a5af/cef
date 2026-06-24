@@ -71,8 +71,9 @@ class CefContext {
   // nullptr or does not specify a color then the global settings will be used.
   // The alpha component will be either SK_AlphaTRANSPARENT or SK_AlphaOPAQUE
   // (e.g. fully transparent or fully opaque). If |transparent_state| is
-  // STATE_DISABLED then SK_AlphaTRANSPARENT will always be returned. If
-  // |transparent_state| is STATE_ENABLED then SK_ColorTRANSPARENT may be returned
+  // STATE_DISABLED then the returned color is always fully opaque
+  // (SK_AlphaOPAQUE). If |transparent_state| is STATE_ENABLED then
+  // SK_ColorTRANSPARENT may be returned
   // to enable transparency for windowless browsers or a frameless
   // window in Views. See additional comments on CefSettings.background_color
   // and CefBrowserSettings.background_color.
