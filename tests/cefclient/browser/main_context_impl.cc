@@ -59,9 +59,19 @@ MainContextImpl::MainContextImpl(CefRefPtr<CefCommandLine> command_line,
                  .c_str());
   }
 
-  // Whether transparent painting is used with windowless rendering.
+  // Whether the Views framework will be used. Determined here — before
+  // use_transparent_painting below reads it (windowless rendering and Views are
+  // mutually exclusive).
+  use_views_ = command_line_->HasSwitch(switches::kUseViews);
+  if (use_windowless_rendering_ && use_views_) {
+    LOG(ERROR)
+        << "Windowless rendering is not supported by the Views framework.";
+    use_views_ = false;
+  }
+
+  // Whether transparent painting is used with windowless rendering or Views.
   const bool use_transparent_painting =
-      use_windowless_rendering_ &&
+      (use_windowless_rendering_ || use_views_) &&
       command_line_->HasSwitch(switches::kTransparentPaintingEnabled);
 
   shared_texture_enabled_ =
@@ -74,15 +84,6 @@ MainContextImpl::MainContextImpl(CefRefPtr<CefCommandLine> command_line,
 
   if (windowless_frame_rate_ <= 0) {
     windowless_frame_rate_ = shared_texture_enabled_ ? 60 : 30;
-  }
-
-  // Whether the Views framework will be used.
-  use_views_ = command_line_->HasSwitch(switches::kUseViews);
-
-  if (use_windowless_rendering_ && use_views_) {
-    LOG(ERROR)
-        << "Windowless rendering is not supported by the Views framework.";
-    use_views_ = false;
   }
 
   // Whether Alloy style will be used.
