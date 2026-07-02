@@ -36,7 +36,6 @@ class CefBrowserPlatformDelegateChromeViews
   bool IsViewsHosted() const override;
   bool IsMovePictureInPictureEnabled() const override;
   bool AllowPictureInPictureWithoutUserActivation() const override;
-  cef::BrowserConfig GetBrowserConfig() const override;
 
   CefBrowserViewImpl* browser_view() const { return browser_view_.get(); }
 

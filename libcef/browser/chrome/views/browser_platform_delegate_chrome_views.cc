@@ -152,24 +152,6 @@ bool CefBrowserPlatformDelegateChromeViews::
   return false;
 }
 
-cef::BrowserConfig CefBrowserPlatformDelegateChromeViews::GetBrowserConfig()
-    const {
-  cef::BrowserConfig config =
-      CefBrowserPlatformDelegateChrome::GetBrowserConfig();
-  // Per-browser transparency gate, matching the cascade's arming condition in
-  // CefBrowserViewImpl (SetDefaults caches the resolved color; alpha 0 arms
-  // WebContentsCreated's SetPageBaseBackgroundColor + observer). The renderer
-  // needs the same signal to arm Blink's base-background-color override —
-  // browser-side calls alone leave page_base_background_color_ at
-  // SK_ColorWHITE and promoted layers clear to opaque white.
-  if (browser_view_) {
-    config.background_transparent =
-        SkColorGetA(browser_view_->default_background_color()) ==
-        SK_AlphaTRANSPARENT;
-  }
-  return config;
-}
-
 CefWindowImpl* CefBrowserPlatformDelegateChromeViews::GetWindowImpl() const {
   if (auto* widget = GetWindowWidget()) {
     CefRefPtr<CefWindow> window = view_util::GetWindowFor(widget);
