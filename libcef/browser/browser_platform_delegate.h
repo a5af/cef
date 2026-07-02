@@ -368,7 +368,9 @@ class CefBrowserPlatformDelegate {
 
   // CefBrowser configuration determined prior to CefBrowserHost creation and
   // passed to the renderer process via the GetNewBrowserInfo Mojo request.
-  cef::BrowserConfig GetBrowserConfig() const;
+  // Virtual so Views-hosted delegates can report per-browser background
+  // transparency (the base implementation conservatively reports opaque).
+  virtual cef::BrowserConfig GetBrowserConfig() const;
 
  protected:
   // Allow deletion via std::unique_ptr only.

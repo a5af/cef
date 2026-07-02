@@ -107,6 +107,12 @@ class CefBrowserViewImpl
     return weak_ptr_factory_.GetWeakPtr();
   }
 
+  // The background color resolved at SetDefaults() time. Alpha 0 means the
+  // transparency cascade is armed for this browser; used by
+  // CefBrowserPlatformDelegateChromeViews::GetBrowserConfig() to tell the
+  // renderer to arm the Blink base-background-color override.
+  SkColor default_background_color() const { return default_background_color_; }
+
  private:
   // Create a new implementation object.
   // Always call Initialize() after creation.
