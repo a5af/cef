@@ -52,6 +52,7 @@ class CefBrowserHostCToCpp
   double GetDefaultZoomLevel() override;
   double GetZoomLevel() override;
   void SetZoomLevel(double zoomLevel) override;
+  void SetZoomIsolated() override;
   void RunFileDialog(FileDialogMode mode, const CefString& title, const CefString& default_file_path, const std::vector<CefString>& accept_filters, CefRefPtr<CefRunFileDialogCallback> callback) override;
   void StartDownload(const CefString& url) override;
   void DownloadImage(const CefString& image_url, bool is_favicon, uint32_t max_image_size, bool bypass_cache, CefRefPtr<CefDownloadImageCallback> callback) override;

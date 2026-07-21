@@ -352,6 +352,21 @@ NO_SANITIZE("cfi-icall") void CefBrowserHostCToCpp::SetZoomLevel(double zoomLeve
       zoomLevel);
 }
 
+NO_SANITIZE("cfi-icall") void CefBrowserHostCToCpp::SetZoomIsolated() {
+  shutdown_checker::AssertNotShutdown();
+
+  auto* _struct = GetStruct();
+  if (!_struct->set_zoom_isolated) {
+    return;
+  }
+
+  // AgentMux patch -- not auto-generated (see include/cef_browser.h's
+  // SetZoomIsolated doc comment for rationale).
+
+  // Execute
+  _struct->set_zoom_isolated(_struct);
+}
+
 NO_SANITIZE("cfi-icall") void CefBrowserHostCToCpp::RunFileDialog(FileDialogMode mode, const CefString& title, const CefString& default_file_path, const std::vector<CefString>& accept_filters, CefRefPtr<CefRunFileDialogCallback> callback) {
   shutdown_checker::AssertNotShutdown();
 

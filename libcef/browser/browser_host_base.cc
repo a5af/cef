@@ -455,6 +455,22 @@ void CefBrowserHostBase::SetZoomLevel(double zoomLevel) {
   }
 }
 
+void CefBrowserHostBase::SetZoomIsolated() {
+  if (!CEF_CURRENTLY_ON_UIT()) {
+    CEF_POST_TASK(CEF_UIT,
+                   base::BindOnce(&CefBrowserHostBase::SetZoomIsolated, this));
+    return;
+  }
+
+  if (auto web_contents = GetWebContents()) {
+    zoom::ZoomController* zoom_controller =
+        zoom::ZoomController::FromWebContents(web_contents);
+    if (zoom_controller) {
+      zoom_controller->SetZoomMode(zoom::ZoomController::ZOOM_MODE_ISOLATED);
+    }
+  }
+}
+
 bool CefBrowserHostBase::HasView() {
   return is_views_hosted_;
 }

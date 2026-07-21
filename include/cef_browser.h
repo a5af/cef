@@ -482,6 +482,20 @@ class CefBrowserHost : public virtual CefBaseRefCounted {
   virtual void SetZoomLevel(double zoomLevel) = 0;
 
   ///
+  /// Put this browser's zoom level into isolated (per-tab) mode
+  /// (zoom::ZoomController::ZOOM_MODE_ISOLATED), so that subsequent calls to
+  /// SetZoomLevel/GetZoomLevel on this browser are scoped to this browser
+  /// alone and no longer shared via HostZoomMap with other browsers using the
+  /// same request context and navigated to the same host -- the default mode
+  /// (ZOOM_MODE_DEFAULT) shares zoom per-origin across every browser on one
+  /// profile. Call once per browser, any time before the first SetZoomLevel
+  /// call you want isolated; safe to call multiple times. This method can
+  /// only be called on the UI thread.
+  ///
+  /*--cef()--*/
+  virtual void SetZoomIsolated() = 0;
+
+  ///
   /// Call to run a file chooser dialog. Only a single file chooser dialog may
   /// be pending at any given time. |mode| represents the type of dialog to
   /// display. |title| to the title to be used for the dialog and may be empty

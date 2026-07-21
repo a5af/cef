@@ -218,6 +218,7 @@ class CefBrowserHostBase : public CefBrowserHost,
   double GetDefaultZoomLevel() override;
   double GetZoomLevel() override;
   void SetZoomLevel(double zoomLevel) override;
+  void SetZoomIsolated() override;
   bool HasView() override;
   bool IsReadyToBeClosed() override;
   void SetFocus(bool focus) override;

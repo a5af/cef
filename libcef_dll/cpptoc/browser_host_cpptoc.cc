@@ -436,6 +436,21 @@ void CEF_CALLBACK browser_host_set_zoom_level(struct _cef_browser_host_0_t* self
       zoomLevel);
 }
 
+void CEF_CALLBACK browser_host_set_zoom_isolated(struct _cef_browser_host_0_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AgentMux patch -- not auto-generated (see include/cef_browser.h's
+  // SetZoomIsolated doc comment for rationale).
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefBrowserHost_0_CppToC::Get(self)->SetZoomIsolated();
+}
+
 void CEF_CALLBACK browser_host_run_file_dialog(struct _cef_browser_host_0_t* self, cef_file_dialog_mode_t mode, const cef_string_t* title, const cef_string_t* default_file_path, cef_string_list_t accept_filters, struct _cef_run_file_dialog_callback_0_t* callback) {
   shutdown_checker::AssertNotShutdown();
 
@@ -1510,6 +1525,7 @@ CefBrowserHost_0_CppToC::CefBrowserHost_0_CppToC() {
   GetStruct()->get_default_zoom_level = browser_host_get_default_zoom_level;
   GetStruct()->get_zoom_level = browser_host_get_zoom_level;
   GetStruct()->set_zoom_level = browser_host_set_zoom_level;
+  GetStruct()->set_zoom_isolated = browser_host_set_zoom_isolated;
   GetStruct()->run_file_dialog = browser_host_run_file_dialog;
   GetStruct()->start_download = browser_host_start_download;
   GetStruct()->download_image = browser_host_download_image;
@@ -1843,6 +1859,21 @@ void CEF_CALLBACK browser_host_set_zoom_level_999999(struct _cef_browser_host_99
   // Execute
   CefBrowserHost_999999_CppToC::Get(self)->SetZoomLevel(
       zoomLevel);
+}
+
+void CEF_CALLBACK browser_host_set_zoom_isolated_999999(struct _cef_browser_host_999999_t* self) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AgentMux patch -- not auto-generated (see include/cef_browser.h's
+  // SetZoomIsolated doc comment for rationale).
+
+  DCHECK(self);
+  if (!self) {
+    return;
+  }
+
+  // Execute
+  CefBrowserHost_999999_CppToC::Get(self)->SetZoomIsolated();
 }
 
 void CEF_CALLBACK browser_host_run_file_dialog_999999(struct _cef_browser_host_999999_t* self, cef_file_dialog_mode_t mode, const cef_string_t* title, const cef_string_t* default_file_path, cef_string_list_t accept_filters, struct _cef_run_file_dialog_callback_0_t* callback) {
@@ -2934,6 +2965,7 @@ CefBrowserHost_999999_CppToC::CefBrowserHost_999999_CppToC() {
   GetStruct()->get_default_zoom_level = browser_host_get_default_zoom_level_999999;
   GetStruct()->get_zoom_level = browser_host_get_zoom_level_999999;
   GetStruct()->set_zoom_level = browser_host_set_zoom_level_999999;
+  GetStruct()->set_zoom_isolated = browser_host_set_zoom_isolated_999999;
   GetStruct()->run_file_dialog = browser_host_run_file_dialog_999999;
   GetStruct()->start_download = browser_host_start_download_999999;
   GetStruct()->download_image = browser_host_download_image_999999;

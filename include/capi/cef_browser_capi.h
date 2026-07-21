@@ -429,6 +429,17 @@ typedef struct _cef_browser_host_t {
   void (CEF_CALLBACK *set_zoom_level)(struct _cef_browser_host_t* self, double zoomLevel);
 
   ///
+  /// Put this browser's zoom level into isolated (per-tab) mode, so that
+  /// subsequent calls to set_zoom_level/get_zoom_level on this browser are
+  /// scoped to this browser alone and no longer shared via HostZoomMap with
+  /// other browsers using the same request context and navigated to the same
+  /// host. Call once per browser, any time before the first set_zoom_level
+  /// call you want isolated; safe to call multiple times. This function can
+  /// only be called on the UI thread.
+  ///
+  void (CEF_CALLBACK *set_zoom_isolated)(struct _cef_browser_host_t* self);
+
+  ///
   /// Call to run a file chooser dialog. Only a single file chooser dialog may
   /// be pending at any given time. |mode| represents the type of dialog to
   /// display. |title| to the title to be used for the dialog and may be NULL to
