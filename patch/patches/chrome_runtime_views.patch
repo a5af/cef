@@ -223,7 +223,7 @@ index 4e81edc2c67425cbab6ed0b00a80157287d64e7d..8e92d6c750426d3946188e6d9b9bf7e1
    // Adds actionable global error menu items to the menu.
    // Examples: Extension permissions and sign in errors.
 diff --git chrome/browser/ui/views/frame/browser_view.cc chrome/browser/ui/views/frame/browser_view.cc
-index 4b4697c29715c922037635a40141a3efb2bdbae4..0b3f3fd1473d511c049c99bedad408bb8c42f821 100644
+index cfa9bbe1e00b4ef75a6afa4cd9f92821abdc3f94..cc3edd6a08c48ffd0133966f17b0e2fa99696aa3 100644
 --- chrome/browser/ui/views/frame/browser_view.cc
 +++ chrome/browser/ui/views/frame/browser_view.cc
 @@ -879,11 +879,21 @@ class BrowserView::PipExclusionObserverImpl
@@ -326,7 +326,7 @@ index 4b4697c29715c922037635a40141a3efb2bdbae4..0b3f3fd1473d511c049c99bedad408bb
  ClientFrameElementInfo BrowserView::GetFrameElementInfo() const {
    // We want to return tabstrip_->height(), but we might be called in the midst
    // of layout, when that hasn't yet been updated to reflect the current state.
-@@ -1918,6 +1952,27 @@ gfx::Point BrowserView::GetThemeOffsetFromBrowserView() const {
+@@ -1924,6 +1958,27 @@ gfx::Point BrowserView::GetThemeOffsetFromBrowserView() const {
        ThemeProperties::kFrameHeightAboveTabs - browser_view_origin.y());
  }
  
@@ -354,7 +354,7 @@ index 4b4697c29715c922037635a40141a3efb2bdbae4..0b3f3fd1473d511c049c99bedad408bb
  bool BrowserView::IsLoadingAnimationRunning() const {
    return !loading_animation_start_.is_null();
  }
-@@ -3112,6 +3167,9 @@ ShowTranslateBubbleResult BrowserView::ShowTranslateBubble(
+@@ -3118,6 +3173,9 @@ ShowTranslateBubbleResult BrowserView::ShowTranslateBubble(
  
  DownloadBubbleUIController* BrowserView::GetDownloadBubbleUIController() {
  #if !BUILDFLAG(IS_CHROMEOS)
@@ -364,7 +364,7 @@ index 4b4697c29715c922037635a40141a3efb2bdbae4..0b3f3fd1473d511c049c99bedad408bb
    if (auto* download_controller =
            DownloadToolbarUIController::From(browser_.get())) {
      return download_controller->bubble_controller();
-@@ -4028,7 +4086,10 @@ bool BrowserView::GetSavedWindowPlacement(
+@@ -4034,7 +4092,10 @@ bool BrowserView::GetSavedWindowPlacement(
  }
  
  views::View* BrowserView::GetContentsView() {
@@ -376,7 +376,7 @@ index 4b4697c29715c922037635a40141a3efb2bdbae4..0b3f3fd1473d511c049c99bedad408bb
  }
  
  views::ClientView* BrowserView::CreateClientView(views::Widget* widget) {
-@@ -4195,9 +4256,22 @@ void BrowserView::DeleteBrowserWindow() {
+@@ -4201,9 +4262,22 @@ void BrowserView::DeleteBrowserWindow() {
    // before the frame is destroyed to mitigate UAF risk.
    browser_widget_->SaveWindowPlacementIfNeeded();
  
@@ -402,7 +402,7 @@ index 4b4697c29715c922037635a40141a3efb2bdbae4..0b3f3fd1473d511c049c99bedad408bb
  }
  
  void BrowserView::SetForceShowBookmarkBarFlag(
-@@ -4458,12 +4532,37 @@ void BrowserView::GetAccessiblePanes(std::vector<views::View*>* panes) {
+@@ -4464,12 +4538,37 @@ void BrowserView::GetAccessiblePanes(std::vector<views::View*>* panes) {
  bool BrowserView::ShouldDescendIntoChildForEventHandling(
      gfx::NativeView child,
      const gfx::Point& location) {
@@ -442,7 +442,7 @@ index 4b4697c29715c922037635a40141a3efb2bdbae4..0b3f3fd1473d511c049c99bedad408bb
      // Draggable regions are defined relative to the web contents.
      gfx::Point point_in_contents_web_view_coords(location);
      views::View::ConvertPointToTarget(GetWidget()->GetRootView(),
-@@ -4472,9 +4571,8 @@ bool BrowserView::ShouldDescendIntoChildForEventHandling(
+@@ -4478,9 +4577,8 @@ bool BrowserView::ShouldDescendIntoChildForEventHandling(
  
      // Draggable regions should be ignored for clicks into any browser view's
      // owned widgets, for example alerts, permission prompts or find bar.
@@ -454,7 +454,7 @@ index 4b4697c29715c922037635a40141a3efb2bdbae4..0b3f3fd1473d511c049c99bedad408bb
             WidgetOwnedByAnchorContainsPoint(point_in_contents_web_view_coords);
    }
  
-@@ -4795,7 +4893,8 @@ void BrowserView::Layout(PassKey) {
+@@ -4801,7 +4899,8 @@ void BrowserView::Layout(PassKey) {
    LayoutSuperclass<views::View>(this);
  
    // TODO(jamescook): Why was this in the middle of layout code?
@@ -464,7 +464,7 @@ index 4b4697c29715c922037635a40141a3efb2bdbae4..0b3f3fd1473d511c049c99bedad408bb
    GetFrameView()->UpdateMinimumSize();
  
    if (omnibox::IsWebUIOmniboxInBrowserViewEnabled()) {
-@@ -5074,6 +5173,13 @@ void BrowserView::AddedToWidget() {
+@@ -5080,6 +5179,13 @@ void BrowserView::AddedToWidget() {
    dialog_anchor_ = std::make_unique<views::ViewSubregionAnchor>(
        kBrowserDialogAnchorElementId, *this);
  

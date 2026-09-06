@@ -60,7 +60,7 @@ index 503e19a566b58e7e99446b87cee60554819dcc07..e7a6c5d7353bdcba686f5743a91df9ed
  
  FrameTree* WebContentsImpl::GetOwnedDocumentPictureInPictureFrameTree() {
 diff --git content/public/browser/web_contents.h content/public/browser/web_contents.h
-index 3e356f2d2d65844c8d0abd583c6fceb8c2ab6401..7f4490a4a621e2d399c9a1bcecfa49395e1de8fc 100644
+index 1a9bf05c6348e6cabbd75f4a45c35ed5dd190331..8b81792ff47b82f927a680d143b16f6a87d6814d 100644
 --- content/public/browser/web_contents.h
 +++ content/public/browser/web_contents.h
 @@ -137,6 +137,7 @@ class PreloadPipelineInfo;
