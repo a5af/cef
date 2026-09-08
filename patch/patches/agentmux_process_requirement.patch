@@ -1,7 +1,7 @@
-diff --git a/base/apple/mach_port_rendezvous_mac.cc b/base/apple/mach_port_rendezvous_mac.cc
+diff --git base/apple/mach_port_rendezvous_mac.cc base/apple/mach_port_rendezvous_mac.cc
 index 42c732389886b..111d2119cd0cc 100644
---- a/base/apple/mach_port_rendezvous_mac.cc
-+++ b/base/apple/mach_port_rendezvous_mac.cc
+--- base/apple/mach_port_rendezvous_mac.cc
++++ base/apple/mach_port_rendezvous_mac.cc
 @@ -405,14 +405,21 @@ GetPeerValidationPolicyFromEnvironment() {
  }
  
